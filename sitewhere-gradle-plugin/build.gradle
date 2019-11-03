@@ -1,0 +1,7 @@
+plugins {
+    id 'java-gradle-plugin'
+}
+
+dependencies {	
+	compile group: 'com.bmuschko', name: 'gradle-docker-plugin', version: '5.3.0'
+}

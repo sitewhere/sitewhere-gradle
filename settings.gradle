@@ -1,0 +1,4 @@
+rootProject.name = 'sitewhere-gradle'
+include ':sitewhere-gradle-plugin'
+
+project(':sitewhere-gradle-plugin').projectDir = "$rootDir/sitewhere-gradle-plugin" as File

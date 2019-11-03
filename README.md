@@ -1,2 +1,3 @@
-# sitewhere-gradle
-SiteWhere Gradle plugins
+# SiteWhere Gradle Artifacts
+
+This repository supports SiteWhere build operations via a Gradle plugin.
