@@ -13,27 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.sitewhere;
+package io.sitewhere
 
-import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import org.gradle.api.Task
+import org.gradle.api.tasks.Nested
+import org.gradle.api.tasks.Optional
 
+import groovy.transform.CompileStatic
 import io.sitewhere.configuration.ISiteWhereConfiguration
 
-/**
- * Gradle task which creates a native image.
- */
-class GenerateNativeImage extends DockerBuildImage implements SiteWhereAware {
+@CompileStatic
+interface SiteWhereAware extends Task {
 
-    /** SiteWhere configuration information */
-    ISiteWhereConfiguration siteWhereConfiguration;
+    /** Set SiteWhere configuration information **/
+    void setSiteWhereConfiguration(ISiteWhereConfiguration sitewhere)
 
-    /*
-     * @see com.bmuschko.gradle.docker.tasks.image.DockerBuildImage#runRemoteCommand()
+    /**
+     * Get SiteWhere configuration information in a task.
+     * @return
      */
-    @Override
-    void runRemoteCommand() {
-	System.out.println("Generating native image.");
-	inputDir.set(project.layout.buildDirectory.file('docker/Dockerfile'))
-	super.runRemoteCommand();
-    }
+    @Nested
+    @Optional
+    ISiteWhereConfiguration getSiteWhereConfiguration()
 }

@@ -13,29 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.sitewhere;
+package io.sitewhere.configuration;
+
+import javax.inject.Inject
 
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.provider.Property
-
-import groovy.transform.CompileStatic
 
 /**
  * Provides configuration for plugin.
  */
-@CompileStatic
-class SiteWhereExtension {
+class SiteWhereConfiguration implements ISiteWhereConfiguration {
+
+    /** Extension name */
+    public static final String EXTENSION_NAME = "sitewhere";
 
     /** Default Gradle image */
     private static final String DEFAULT_GRADLE_IMAGE = "gradle:jdk8"
 
-    /**
-     * Docker image used for executing Gradle build stage.
-     */
-    final Property<String> gradleImage
+    @Inject
+    SiteWhereConfiguration(ObjectFactory objectFactory) {
+    }
 
-    SiteWhereExtension(ObjectFactory objectFactory) {
-	gradleImage = objectFactory.property(String)
-	gradleImage.set(DEFAULT_GRADLE_IMAGE)
+    NativeConfiguration getNativeImage( ) {
+	((ExtensionAware) this).extensions.getByName(NativeConfiguration.EXTENSION_NAME)
+    }
+
+    DebugConfiguration getDebug( ) {
+	((ExtensionAware) this).extensions.getByName(DebugConfiguration.EXTENSION_NAME)
     }
 }

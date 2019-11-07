@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 package io.sitewhere;
+import org.gradle.api.Action
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.tasks.Copy
+
+import io.sitewhere.configuration.DebugConfiguration
+import io.sitewhere.configuration.NativeConfiguration
+import io.sitewhere.configuration.SiteWhereConfiguration
 
 /**
  * SiteWhere Gradle plugin.
  */
 public class SiteWherePlugin implements Plugin<Project> {
-
-    /** Extension name */
-    public static final String EXTENSION_NAME = "sitewhere";
 
     /** Constant for native image Dockerfile task */
     public static final String TASK_NATIVE_IMAGE_DOCKER_FILE = "nativeImageDockerfile";
@@ -36,12 +40,36 @@ public class SiteWherePlugin implements Plugin<Project> {
      */
     @Override
     void apply(Project project) {
-	project.extensions.create(EXTENSION_NAME, SiteWhereExtension, project.objects)
-	project.getTasks().create(TASK_NATIVE_IMAGE_DOCKER_FILE, NativeImageDockerfile.class).dependsOn("build");
-	project.getTasks().create(TASK_GENERATE_NATIVE_IMAGE, GenerateNativeImage.class).dependsOn(TASK_NATIVE_IMAGE_DOCKER_FILE);
+	// Create configuration extensions.
+	SiteWhereConfiguration sitewhere = project.extensions.create(SiteWhereConfiguration.EXTENSION_NAME, SiteWhereConfiguration, project.objects)
+	((ExtensionAware) sitewhere).extensions.create(DebugConfiguration.EXTENSION_NAME, DebugConfiguration, project.objects)
+	((ExtensionAware) sitewhere).extensions.create(NativeConfiguration.EXTENSION_NAME, NativeConfiguration, project.objects)
+
+	// Create and link tasks.
+	project.getTasks().create("copyCodeToDocker", Copy) {
+	    from(project.parent.projectDir)
+	    into(project.layout.buildDirectory.file('docker'))
+	    include 'build.gradle'
+	    include 'settings.gradle'
+	    include "${project.name}/src/**"
+	    include "${project.name}/build.gradle"
+	}
+	project.getTasks().create(TASK_NATIVE_IMAGE_DOCKER_FILE, NativeImageDockerfile.class).dependsOn("copyCodeToDocker")
+	project.getTasks().create(TASK_GENERATE_NATIVE_IMAGE, GenerateNativeImage.class).dependsOn(TASK_NATIVE_IMAGE_DOCKER_FILE)
+	configureSiteWhereAwareTasks(project, sitewhere)
     }
 
-    public SiteWhereExtension getSiteWhereExtension() {
-	return siteWhereExtension;
+    /**
+     * Configure SiteWhere tasks with extension info.
+     * @param project
+     * @param sitewhere
+     */
+    private void configureSiteWhereAwareTasks(Project project, SiteWhereConfiguration sitewhere) {
+	project.tasks.withType(SiteWhereAware, new Action<SiteWhereAware>() {
+		    @Override
+		    void execute(SiteWhereAware siteWhereAware) {
+			siteWhereAware.setSiteWhereConfiguration(sitewhere)
+		    }
+		})
     }
 }

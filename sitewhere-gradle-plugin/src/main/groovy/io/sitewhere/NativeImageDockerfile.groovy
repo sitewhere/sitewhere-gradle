@@ -15,39 +15,52 @@
  */
 package io.sitewhere
 
-import org.gradle.api.tasks.TaskAction
-
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+
+import io.sitewhere.configuration.ISiteWhereConfiguration
 
 /**
  * Create Dockerfile to build a native image.
  */
-class NativeImageDockerfile extends Dockerfile {
+class NativeImageDockerfile extends Dockerfile implements SiteWhereAware {
 
     /** Working directory for docker artifacts */
     public static final String WORKING_DIR = "/home/gradle/sitewhere";
 
-    public NativeImageDockerfile() {
-	super()
+    /** SiteWhere configuration information */
+    ISiteWhereConfiguration siteWhereConfiguration;
+
+    @Override
+    public void create() {
 	destFile.set(project.layout.buildDirectory.file('docker/Dockerfile'))
 
 	// Execute Gradle build stage.
-	from "${project.sitewhere.gradleImage.get()} as builder"
+	from "${siteWhereConfiguration.nativeImage.gradleImage.get()} as builder"
 	copyFile(new CopyFile(".", WORKING_DIR).withChown("gradle:gradle"))
 	workingDir(WORKING_DIR);
-	runCommand("./gradlew build");
+	runCommand("gradle build");
 
 	// Execute native build in GraalVM container.
-	from "oracle/graalvm-ce:19.2.1 as graalvm"
+	from "${siteWhereConfiguration.nativeImage.graalImage.get()} as graalvm"
 	copyFile(new CopyFile(WORKING_DIR, WORKING_DIR).withStage("builder"));
 	workingDir(WORKING_DIR);
 	runCommand("/opt/graalvm-ce-19.2.1/bin/gu install native-image");
-	runCommand("./gradlew buildNative");
+	runCommand("gradle buildNative");
 
 	// Execute native build in GraalVM container.
-	def runner = "sitewhere-${project.version}-runner"
+	def runner = "sitewhere-${project.version}-${siteWhereConfiguration.debug.enabled.get()}-runner"
 	from "frolvlad/alpine-glibc"
 	copyFile(new CopyFile("/home/gradle/sitewhere-graalvm/build/${runner}", ".").withStage("graalvm"));
 	entryPoint("./${runner}")
+
+	destFile.get().asFile.withWriter { out ->
+	    instructions.get().forEach() { Instruction instruction ->
+		String instructionText = instruction.getText()
+
+		if (instructionText) {
+		    out.println instructionText
+		}
+	    }
+	}
     }
 }
