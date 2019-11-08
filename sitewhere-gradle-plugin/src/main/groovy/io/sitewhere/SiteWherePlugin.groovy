@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package io.sitewhere;
+import org.apache.tools.ant.DirectoryScanner
 import org.gradle.api.Action
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -45,15 +46,39 @@ public class SiteWherePlugin implements Plugin<Project> {
 	((ExtensionAware) sitewhere).extensions.create(DebugConfiguration.EXTENSION_NAME, DebugConfiguration, project.objects)
 	((ExtensionAware) sitewhere).extensions.create(NativeConfiguration.EXTENSION_NAME, NativeConfiguration, project.objects)
 
+	// Copy microservice core.
+	project.getTasks().create("copyMsCoreToDocker", Copy) {
+	    from(new File(project.parent.projectDir, '../sitewhere-microservice-core'))
+	    into(project.layout.buildDirectory.file('docker/sitewhere-microservice-core'))
+	}
+
 	// Create and link tasks.
 	project.getTasks().create("copyCodeToDocker", Copy) {
+	    // Hack to allow copying of excluded resources.
+	    doFirst {
+		DirectoryScanner.defaultExcludes.each { DirectoryScanner.removeDefaultExclude it }
+		DirectoryScanner.addDefaultExclude 'placeholder'
+	    }
+
 	    from(project.parent.projectDir)
 	    into(project.layout.buildDirectory.file('docker'))
+	    include 'gradlew'
+	    include 'gradle/**'
 	    include 'build.gradle'
+	    include 'gradle.properties'
 	    include 'settings.gradle'
+	    include '.git/**'
+	    include 'HEADER'
 	    include "${project.name}/src/**"
 	    include "${project.name}/build.gradle"
-	}
+	    include "sitewhere-communication/**"
+	    include "sitewhere-configuration/**"
+	    include "sitewhere-mongodb/**"
+
+	    doLast {
+		DirectoryScanner.resetDefaultExcludes()
+	    }
+	}//.dependsOn("copyMsCoreToDocker")
 	project.getTasks().create(TASK_NATIVE_IMAGE_DOCKER_FILE, NativeImageDockerfile.class).dependsOn("copyCodeToDocker")
 	project.getTasks().create(TASK_GENERATE_NATIVE_IMAGE, GenerateNativeImage.class).dependsOn(TASK_NATIVE_IMAGE_DOCKER_FILE)
 	configureSiteWhereAwareTasks(project, sitewhere)

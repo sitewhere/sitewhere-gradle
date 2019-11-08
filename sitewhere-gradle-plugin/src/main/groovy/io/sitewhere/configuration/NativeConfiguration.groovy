@@ -28,25 +28,25 @@ class NativeConfiguration {
     /** Extension name */
     public static final String EXTENSION_NAME = "nativeImage";
 
-    /** Default Gradle image used for running Gradle build */
-    private static final String DEFAULT_GRADLE_IMAGE = "gradle:jdk8"
-
     /** Default GraalVM image used for generation */
-    private static final String DEFAULT_GRAAL_IMAGE = "oracle/graalvm-ce:19.2.1"
-
-    /**
-     * Gradle Docker image used for running Gradle build.
-     */
-    final Property<String> gradleImage
+    private static final String DEFAULT_GRAAL_IMAGE = "sitewhere/graalvm-gradle:19.2.1"
+    
+    /** Default Docker repository for image */
+    private static final String DEFAULT_DOCKER_REPOSITORY = "docker.io"
 
     /**
      * GraalVM Docker image used for generation.
      */
     final Property<String> graalImage
+    
+    /**
+     * Docker repository for generated image.
+     */
+    final Property<String> dockerRepository
 
     @Inject
     NativeConfiguration(ObjectFactory objectFactory) {
-	gradleImage = objectFactory.property(String).convention(DEFAULT_GRADLE_IMAGE)
 	graalImage = objectFactory.property(String).convention(DEFAULT_GRAAL_IMAGE)
+	dockerRepository = objectFactory.property(String).convention(DEFAULT_DOCKER_REPOSITORY)
     }
 }

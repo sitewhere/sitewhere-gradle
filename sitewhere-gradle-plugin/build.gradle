@@ -21,8 +21,7 @@ task javadocJar(type: Jar) {
 apply plugin: 'maven-publish'
 publishing {
 	publications {
-		mavenJava(MavenPublication) {
-		    from components.java
+		pluginMaven(MavenPublication) {
             artifact sourcesJar
             artifact javadocJar
 			pom {
@@ -47,7 +46,7 @@ publishing {
                     url = 'https://github.com/sitewhere/sitewhere-gradle'
                 }
 			}	
-		}
+        }
 	}
     repositories {
         maven {
@@ -62,5 +61,5 @@ publishing {
 
 apply plugin: 'signing'
 signing {
-    sign publishing.publications.mavenJava
+    sign publishing.publications.pluginMaven
 }

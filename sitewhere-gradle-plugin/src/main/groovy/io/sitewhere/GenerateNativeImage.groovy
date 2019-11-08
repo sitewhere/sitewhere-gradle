@@ -15,6 +15,9 @@
  */
 package io.sitewhere;
 
+import org.gradle.api.tasks.Nested
+import org.gradle.api.tasks.Optional
+
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 
 import io.sitewhere.configuration.ISiteWhereConfiguration
@@ -27,13 +30,12 @@ class GenerateNativeImage extends DockerBuildImage implements SiteWhereAware {
     /** SiteWhere configuration information */
     ISiteWhereConfiguration siteWhereConfiguration;
 
-    /*
-     * @see com.bmuschko.gradle.docker.tasks.image.DockerBuildImage#runRemoteCommand()
-     */
-    @Override
-    void runRemoteCommand() {
-	System.out.println("Generating native image.");
-	inputDir.set(project.layout.buildDirectory.file('docker/Dockerfile'))
-	super.runRemoteCommand();
+    /** Set SiteWhere configuration information **/
+    void setSiteWhereConfiguration(ISiteWhereConfiguration sitewhere) {
+	this.siteWhereConfiguration = sitewhere;
+	dockerFile.set(project.layout.buildDirectory.file('docker/Dockerfile'))
+	String tag = "${siteWhereConfiguration.nativeImage.dockerRepository.get()}/sitewhere/${project.name}:native-${project.version}"
+	tags.set([tag])
+	logger.info(String.format("Building microservice native image with tag '%s'...", tag))
     }
 }

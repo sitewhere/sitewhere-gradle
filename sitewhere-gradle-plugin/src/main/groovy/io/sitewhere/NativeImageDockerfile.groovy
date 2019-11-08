@@ -27,6 +27,9 @@ class NativeImageDockerfile extends Dockerfile implements SiteWhereAware {
     /** Working directory for docker artifacts */
     public static final String WORKING_DIR = "/home/gradle/sitewhere";
 
+    /** Working directory for microservice core artifacts */
+    public static final String MICOSERVICE_DIR = WORKING_DIR + "/sitewhere-microservice-core";
+
     /** SiteWhere configuration information */
     ISiteWhereConfiguration siteWhereConfiguration;
 
@@ -34,23 +37,21 @@ class NativeImageDockerfile extends Dockerfile implements SiteWhereAware {
     public void create() {
 	destFile.set(project.layout.buildDirectory.file('docker/Dockerfile'))
 
-	// Execute Gradle build stage.
-	from "${siteWhereConfiguration.nativeImage.gradleImage.get()} as builder"
-	copyFile(new CopyFile(".", WORKING_DIR).withChown("gradle:gradle"))
-	workingDir(WORKING_DIR);
-	runCommand("gradle build");
-
 	// Execute native build in GraalVM container.
 	from "${siteWhereConfiguration.nativeImage.graalImage.get()} as graalvm"
-	copyFile(new CopyFile(WORKING_DIR, WORKING_DIR).withStage("builder"));
+	copyFile(new CopyFile(".", WORKING_DIR))
+	// workingDir(MICOSERVICE_DIR);
+	// runCommand("/opt/gradle/bin/gradle publishToMavenLocal");
 	workingDir(WORKING_DIR);
+	runCommand("/opt/gradle/bin/gradle build");
 	runCommand("/opt/graalvm-ce-19.2.1/bin/gu install native-image");
-	runCommand("gradle buildNative");
+	workingDir(WORKING_DIR + "/${project.name}");
+	runCommand("/opt/gradle/bin/gradle buildNative");
 
 	// Execute native build in GraalVM container.
-	def runner = "sitewhere-${project.version}-${siteWhereConfiguration.debug.enabled.get()}-runner"
+	def runner = "${project.name}-${project.version}-runner"
 	from "frolvlad/alpine-glibc"
-	copyFile(new CopyFile("/home/gradle/sitewhere-graalvm/build/${runner}", ".").withStage("graalvm"));
+	copyFile(new CopyFile(WORKING_DIR + "/${project.name}/build/${runner}", ".").withStage("graalvm"));
 	entryPoint("./${runner}")
 
 	destFile.get().asFile.withWriter { out ->
