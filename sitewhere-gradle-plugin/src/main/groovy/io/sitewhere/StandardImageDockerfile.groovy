@@ -20,15 +20,9 @@ import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import io.sitewhere.configuration.ISiteWhereConfiguration
 
 /**
- * Create Dockerfile to build a native image.
+ * Create Dockerfile to build a standard JVM-based image.
  */
-class NativeImageDockerfile extends Dockerfile implements SiteWhereAware {
-
-    /** Working directory for docker artifacts */
-    public static final String WORKING_DIR = "/home/gradle/sitewhere";
-
-    /** Working directory for microservice core artifacts */
-    public static final String MICOSERVICE_DIR = WORKING_DIR + "/sitewhere-microservice-core";
+class StandardImageDockerfile extends Dockerfile implements SiteWhereAware {
 
     /** SiteWhere configuration information */
     ISiteWhereConfiguration siteWhereConfiguration;
@@ -36,23 +30,17 @@ class NativeImageDockerfile extends Dockerfile implements SiteWhereAware {
     @Override
     public void create() {
 	destFile.set(project.layout.buildDirectory.file('docker/Dockerfile'))
+	def runnerJar = "${project.name}-${project.version}-runner.jar"
 
 	// Execute native build in GraalVM container.
-	from "${siteWhereConfiguration.nativeImage.graalImage.get()} as graalvm"
-	copyFile(new CopyFile(".", WORKING_DIR))
-	workingDir(MICOSERVICE_DIR);
-	runCommand("/opt/gradle/bin/gradle publishToMavenLocal");
-	workingDir(WORKING_DIR);
-	runCommand("/opt/gradle/bin/gradle build");
-	runCommand("/opt/graalvm-ce-19.2.1/bin/gu install native-image");
-	workingDir(WORKING_DIR + "/${project.name}");
-	runCommand("/opt/gradle/bin/gradle buildNative");
-
-	// Execute native build in GraalVM container.
-	def runner = "${project.name}-${project.version}-runner"
-	from "frolvlad/alpine-glibc"
-	copyFile(new CopyFile(WORKING_DIR + "/${project.name}/build/${runner}", ".").withStage("graalvm"));
-	entryPoint("./${runner}")
+	from "${siteWhereConfiguration.standardImage.jvmImage.get()} as jvm"
+	copyFile(runnerJar, "/")
+	copyFile("lib", "/lib")
+	defaultCommand('java',
+		'-Xmx512M',
+		'-Xss384K',
+		'-jar',
+		"/${runnerJar}");
 
 	destFile.get().asFile.withWriter { out ->
 	    instructions.get().forEach() { Instruction instruction ->

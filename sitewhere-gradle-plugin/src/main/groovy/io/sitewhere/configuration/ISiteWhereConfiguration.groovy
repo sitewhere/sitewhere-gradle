@@ -16,6 +16,8 @@
 package io.sitewhere.configuration
 
 interface ISiteWhereConfiguration {
+    
+    StandardConfiguration getStandardImage()
 
     NativeConfiguration getNativeImage()
 

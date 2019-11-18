@@ -24,17 +24,24 @@ import org.gradle.api.tasks.Copy
 import io.sitewhere.configuration.DebugConfiguration
 import io.sitewhere.configuration.NativeConfiguration
 import io.sitewhere.configuration.SiteWhereConfiguration
+import io.sitewhere.configuration.StandardConfiguration
 
 /**
  * SiteWhere Gradle plugin.
  */
 public class SiteWherePlugin implements Plugin<Project> {
 
+    /** Constant for standard image Dockerfile task */
+    public static final String TASK_STANDARD_IMAGE_DOCKER_FILE = "standardImageDockerfile";
+
     /** Constant for native image Dockerfile task */
     public static final String TASK_NATIVE_IMAGE_DOCKER_FILE = "nativeImageDockerfile";
 
+    /** Constant for standard image generation task */
+    public static final String TASK_DOCKER_STANDARD_IMAGE = "dockerImage";
+
     /** Constant for native image generation task */
-    public static final String TASK_GENERATE_NATIVE_IMAGE = "generateNativeImage";
+    public static final String TASK_DOCKER_NATIVE_IMAGE = "dockerNativeImage";
 
     /*
      * @see org.gradle.api.Plugin#apply(java.lang.Object)
@@ -44,7 +51,16 @@ public class SiteWherePlugin implements Plugin<Project> {
 	// Create configuration extensions.
 	SiteWhereConfiguration sitewhere = project.extensions.create(SiteWhereConfiguration.EXTENSION_NAME, SiteWhereConfiguration, project.objects)
 	((ExtensionAware) sitewhere).extensions.create(DebugConfiguration.EXTENSION_NAME, DebugConfiguration, project.objects)
+	((ExtensionAware) sitewhere).extensions.create(StandardConfiguration.EXTENSION_NAME, StandardConfiguration, project.objects)
 	((ExtensionAware) sitewhere).extensions.create(NativeConfiguration.EXTENSION_NAME, NativeConfiguration, project.objects)
+
+	// Copy jar file and libraries.
+	project.getTasks().create("copyJarAndLibs", Copy) {
+	    from(project.layout.buildDirectory)
+	    into(project.layout.buildDirectory.dir('docker'))
+	    include "${project.name}-${project.version}-runner.jar"
+	    include 'lib/**'
+	}.dependsOn("build")
 
 	// Copy microservice core.
 	project.getTasks().create("copyMsCoreToDocker", Copy) {
@@ -52,7 +68,7 @@ public class SiteWherePlugin implements Plugin<Project> {
 	    into(project.layout.buildDirectory.file('docker/sitewhere-microservice-core'))
 	}
 
-	// Create and link tasks.
+	// Copy core code for building in GraalVM.
 	project.getTasks().create("copyCodeToDocker", Copy) {
 	    // Hack to allow copying of excluded resources.
 	    doFirst {
@@ -78,9 +94,13 @@ public class SiteWherePlugin implements Plugin<Project> {
 	    doLast {
 		DirectoryScanner.resetDefaultExcludes()
 	    }
-	}//.dependsOn("copyMsCoreToDocker")
+	}.dependsOn("copyMsCoreToDocker")
+
+	project.getTasks().create(TASK_STANDARD_IMAGE_DOCKER_FILE, StandardImageDockerfile.class).dependsOn("copyJarAndLibs")
+	project.getTasks().create(TASK_DOCKER_STANDARD_IMAGE, DockerStandardImage.class).dependsOn(TASK_STANDARD_IMAGE_DOCKER_FILE)
+
 	project.getTasks().create(TASK_NATIVE_IMAGE_DOCKER_FILE, NativeImageDockerfile.class).dependsOn("copyCodeToDocker")
-	project.getTasks().create(TASK_GENERATE_NATIVE_IMAGE, GenerateNativeImage.class).dependsOn(TASK_NATIVE_IMAGE_DOCKER_FILE)
+	project.getTasks().create(TASK_DOCKER_NATIVE_IMAGE, DockerNativeImage.class).dependsOn(TASK_NATIVE_IMAGE_DOCKER_FILE)
 	configureSiteWhereAwareTasks(project, sitewhere)
     }
 

@@ -25,7 +25,7 @@ import io.sitewhere.configuration.ISiteWhereConfiguration
 /**
  * Gradle task which creates a native image.
  */
-class GenerateNativeImage extends DockerBuildImage implements SiteWhereAware {
+class DockerNativeImage extends DockerBuildImage implements SiteWhereAware {
 
     /** SiteWhere configuration information */
     ISiteWhereConfiguration siteWhereConfiguration;

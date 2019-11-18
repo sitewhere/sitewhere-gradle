@@ -29,11 +29,12 @@ class SiteWhereConfiguration implements ISiteWhereConfiguration {
     /** Extension name */
     public static final String EXTENSION_NAME = "sitewhere";
 
-    /** Default Gradle image */
-    private static final String DEFAULT_GRADLE_IMAGE = "gradle:jdk8"
-
     @Inject
     SiteWhereConfiguration(ObjectFactory objectFactory) {
+    }
+
+    StandardConfiguration getStandardImage( ) {
+	((ExtensionAware) this).extensions.getByName(StandardConfiguration.EXTENSION_NAME)
     }
 
     NativeConfiguration getNativeImage( ) {
