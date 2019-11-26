@@ -54,7 +54,7 @@ public class SiteWherePlugin implements Plugin<Project> {
 	((ExtensionAware) sitewhere).extensions.create(StandardConfiguration.EXTENSION_NAME, StandardConfiguration, project.objects)
 	((ExtensionAware) sitewhere).extensions.create(NativeConfiguration.EXTENSION_NAME, NativeConfiguration, project.objects)
 
-	// Copy jar file and libraries.
+	// Copy jar file and libraries (non-native).
 	project.getTasks().create("copyJarAndLibs", Copy) {
 	    from(project.layout.buildDirectory)
 	    into(project.layout.buildDirectory.dir('docker'))
@@ -62,11 +62,18 @@ public class SiteWherePlugin implements Plugin<Project> {
 	    include 'lib/**'
 	}.dependsOn("build")
 
-	// Copy microservice core.
-	project.getTasks().create("copyMsCoreToDocker", Copy) {
-	    from(new File(project.parent.projectDir, '../sitewhere-microservice-core'))
-	    into(project.layout.buildDirectory.file('docker/sitewhere-microservice-core'))
-	}
+	// Copy required libraries.
+	project.getTasks().create("copyLibs", Copy) {
+	    from(new File('c:/users/derek/.m2/repository'))
+	    into(project.layout.buildDirectory.file('docker/m2'))
+	    include 'io/fabric8/**'
+	    include 'io/quarkus/**'
+	    include 'com/sitewhere/sitewhere-grpc-client/**'
+	    include 'com/sitewhere/sitewhere-k8s-model/**'
+	    include 'com/sitewhere/sitewhere-microservice/**'
+	    include 'com/sitewhere/sitewhere-microservice-api/**'
+	    include 'com/sitewhere/sitewhere-mongodb/**'
+	}.dependsOn("build")
 
 	// Copy core code for building in GraalVM.
 	project.getTasks().create("copyCodeToDocker", Copy) {
@@ -77,7 +84,7 @@ public class SiteWherePlugin implements Plugin<Project> {
 	    }
 
 	    from(project.parent.projectDir)
-	    into(project.layout.buildDirectory.file('docker'))
+	    into(project.layout.buildDirectory.file('docker/sitewhere'))
 	    include 'gradlew'
 	    include 'gradle/**'
 	    include 'build.gradle'
@@ -87,14 +94,11 @@ public class SiteWherePlugin implements Plugin<Project> {
 	    include 'HEADER'
 	    include "${project.name}/src/**"
 	    include "${project.name}/build.gradle"
-	    include "sitewhere-communication/**"
-	    include "sitewhere-configuration/**"
-	    include "sitewhere-mongodb/**"
 
 	    doLast {
 		DirectoryScanner.resetDefaultExcludes()
 	    }
-	}.dependsOn("copyMsCoreToDocker")
+	}.dependsOn("copyLibs")
 
 	project.getTasks().create(TASK_STANDARD_IMAGE_DOCKER_FILE, StandardImageDockerfile.class).dependsOn("copyJarAndLibs")
 	project.getTasks().create(TASK_DOCKER_STANDARD_IMAGE, DockerStandardImage.class).dependsOn(TASK_STANDARD_IMAGE_DOCKER_FILE)

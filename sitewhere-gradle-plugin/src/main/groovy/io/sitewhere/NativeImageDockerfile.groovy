@@ -25,10 +25,7 @@ import io.sitewhere.configuration.ISiteWhereConfiguration
 class NativeImageDockerfile extends Dockerfile implements SiteWhereAware {
 
     /** Working directory for docker artifacts */
-    public static final String WORKING_DIR = "/home/gradle/sitewhere";
-
-    /** Working directory for microservice core artifacts */
-    public static final String MICOSERVICE_DIR = WORKING_DIR + "/sitewhere-microservice-core";
+    public static final String SITEWHERE_DIR = "/home/gradle/sitewhere";
 
     /** SiteWhere configuration information */
     ISiteWhereConfiguration siteWhereConfiguration;
@@ -39,20 +36,25 @@ class NativeImageDockerfile extends Dockerfile implements SiteWhereAware {
 
 	// Execute native build in GraalVM container.
 	from "${siteWhereConfiguration.nativeImage.graalImage.get()} as graalvm"
-	copyFile(new CopyFile(".", WORKING_DIR))
-	workingDir(MICOSERVICE_DIR);
-	runCommand("/opt/gradle/bin/gradle publishToMavenLocal");
-	workingDir(WORKING_DIR);
+	copyFile(new CopyFile("./m2", "/root/.m2/repository"))
+	copyFile(new CopyFile("./sitewhere", SITEWHERE_DIR))
+	workingDir(SITEWHERE_DIR);
 	runCommand("/opt/gradle/bin/gradle build");
 	runCommand("/opt/graalvm-ce-19.2.1/bin/gu install native-image");
-	workingDir(WORKING_DIR + "/${project.name}");
+	workingDir(SITEWHERE_DIR + "/${project.name}");
 	runCommand("/opt/gradle/bin/gradle buildNative");
-
-	// Execute native build in GraalVM container.
+	
+	// Copy SSL libraries.
+	from "quay.io/quarkus/ubi-quarkus-native-image:19.2.1 as ssllibs"
+	runCommand "mkdir -p /tmp/ssl-libs/lib && cp /opt/graalvm/jre/lib/security/cacerts /tmp/ssl-libs && cp /opt/graalvm/jre/lib/amd64/libsunec.so /tmp/ssl-libs/lib/"
+	
+	// Build small container with executable.
 	def runner = "${project.name}-${project.version}-runner"
 	from "frolvlad/alpine-glibc"
-	copyFile(new CopyFile(WORKING_DIR + "/${project.name}/build/${runner}", ".").withStage("graalvm"));
-	entryPoint("./${runner}")
+	copyFile(new CopyFile(SITEWHERE_DIR + "/${project.name}/build/${runner}", ".").withStage("graalvm"));
+	copyFile(new CopyFile("/tmp/ssl-libs", "/ssllib").withStage("ssllibs"));
+	runCommand("chmod 775 /ssllib");
+	defaultCommand("./${runner}", "-Dquarkus.http.host=0.0.0.0", "-Djava.library.path=/ssllib/lib", "-Djavax.net.ssl.trustStore=/ssllib/cacerts")
 
 	destFile.get().asFile.withWriter { out ->
 	    instructions.get().forEach() { Instruction instruction ->
