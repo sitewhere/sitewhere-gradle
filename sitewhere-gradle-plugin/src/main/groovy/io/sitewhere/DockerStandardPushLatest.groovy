@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 SiteWhere LLC.
+ * Copyright 2020 SiteWhere LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package io.sitewhere
 
-import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 
 import io.sitewhere.configuration.ISiteWhereConfiguration
 
 /**
- * Gradle task which creates a standard JVM image.
+ * Gradle task which pushes a standard JVM image with standard and "latest" tags.
  */
-class DockerStandardImage extends DockerBuildImage implements SiteWhereAware {
+class DockerStandardPushLatest extends DockerPushImage implements SiteWhereAware {
 
     /** SiteWhere configuration information */
     ISiteWhereConfiguration siteWhereConfiguration;
@@ -30,9 +30,8 @@ class DockerStandardImage extends DockerBuildImage implements SiteWhereAware {
     /** Set SiteWhere configuration information **/
     void setSiteWhereConfiguration(ISiteWhereConfiguration sitewhere) {
 	this.siteWhereConfiguration = sitewhere;
-	dockerFile.set(project.layout.buildDirectory.file('docker/Dockerfile'))
-	String tag = "${siteWhereConfiguration.standardImage.dockerRepository.get()}/sitewhere/${project.name}:${project.version}"
-	tags.set([tag])
-	logger.info(String.format("Building microservice standard image with tag '%s'...", tag))
+	String pushImageName = "${siteWhereConfiguration.standardImage.dockerRepository.get()}/sitewhere/${project.name}"
+	imageName.set(pushImageName)
+	logger.info(String.format("Pushing microservice standard image with tag '%s' and 'latest'...", pushImageName))
     }
 }

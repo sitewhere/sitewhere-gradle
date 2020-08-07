@@ -34,11 +34,17 @@ public class SiteWherePlugin implements Plugin<Project> {
     /** Constant for standard image Dockerfile task */
     public static final String TASK_STANDARD_IMAGE_DOCKER_FILE = "standardImageDockerfile";
 
-    /** Constant for native image Dockerfile task */
-    public static final String TASK_NATIVE_IMAGE_DOCKER_FILE = "nativeImageDockerfile";
-
     /** Constant for standard image generation task */
     public static final String TASK_DOCKER_STANDARD_IMAGE = "dockerImage";
+
+    /** Constant for standard image push task */
+    public static final String TASK_DOCKER_STANDARD_IMAGE_PUSH = "dockerPush";
+
+    /** Constant for standard image push task */
+    public static final String TASK_DOCKER_STANDARD_IMAGE_PUSH_LATEST = "dockerPushLatest";
+
+    /** Constant for native image Dockerfile task */
+    public static final String TASK_NATIVE_IMAGE_DOCKER_FILE = "nativeImageDockerfile";
 
     /** Constant for native image generation task */
     public static final String TASK_DOCKER_NATIVE_IMAGE = "dockerNativeImage";
@@ -102,6 +108,8 @@ public class SiteWherePlugin implements Plugin<Project> {
 
 	project.getTasks().create(TASK_STANDARD_IMAGE_DOCKER_FILE, StandardImageDockerfile.class).dependsOn("copyJarAndLibs")
 	project.getTasks().create(TASK_DOCKER_STANDARD_IMAGE, DockerStandardImage.class).dependsOn(TASK_STANDARD_IMAGE_DOCKER_FILE)
+	project.getTasks().create(TASK_DOCKER_STANDARD_IMAGE_PUSH, DockerStandardPush.class).dependsOn(TASK_DOCKER_STANDARD_IMAGE)
+	project.getTasks().create(TASK_DOCKER_STANDARD_IMAGE_PUSH_LATEST, DockerStandardPushLatest.class).dependsOn(TASK_DOCKER_STANDARD_IMAGE)
 
 	project.getTasks().create(TASK_NATIVE_IMAGE_DOCKER_FILE, NativeImageDockerfile.class).dependsOn("copyCodeToDocker")
 	project.getTasks().create(TASK_DOCKER_NATIVE_IMAGE, DockerNativeImage.class).dependsOn(TASK_NATIVE_IMAGE_DOCKER_FILE)
