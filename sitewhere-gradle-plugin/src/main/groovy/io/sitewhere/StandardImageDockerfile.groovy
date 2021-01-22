@@ -33,7 +33,7 @@ class StandardImageDockerfile extends Dockerfile implements SiteWhereAware {
 	def runnerJar = "${project.name}-${project.version}-runner.jar"
 
 	// Execute native build in GraalVM container.
-	from "${siteWhereConfiguration.standardImage.jvmImage.get()} as jvm"
+	from "${siteWhereConfiguration.standardImage.dockerRepository.get()}/${siteWhereConfiguration.standardImage.jvmImage.get()} as jvm"
 	copyFile(runnerJar, "/")
 	copyFile("lib", "/lib")
 	defaultCommand('java',
